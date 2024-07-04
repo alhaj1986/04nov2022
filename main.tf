@@ -2,6 +2,16 @@ provider "aws" {
   region = "us-west-2"
 }
 
+resource "tls_private_key" "example" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "deployer" {
+  key_name   = "deployer-key"
+  public_key = tls_private_key.example.public_key_openssh
+}
+
 module "vpc" {
   source = "terraform-aws-modules/vpc/aws"
   version = "3.14.2"
@@ -33,7 +43,7 @@ resource "aws_launch_template" "app" {
               sudo apt-get install -y tomcat9
               EOF
 
-  key_name = var.key_name
+  key_name = aws_key_pair.deployer.key_name
 
   network_interfaces {
     associate_public_ip_address = true
